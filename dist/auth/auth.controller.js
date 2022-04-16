@@ -28,9 +28,12 @@ const common_1 = require("@nestjs/common");
 const user_service_1 = require("../user/user.service");
 const register_dto_1 = require("./dtos/register.dto");
 const bcrypt = require("bcrypt");
+const jwt_1 = require("@nestjs/jwt");
+const auth_guard_1 = require("./auth.guard");
 let AuthController = class AuthController {
-    constructor(userService) {
+    constructor(userService, jwtService) {
         this.userService = userService;
+        this.jwtService = jwtService;
     }
     async register(body) {
         const { password_confirm } = body, data = __rest(body, ["password_confirm"]);
@@ -39,7 +42,54 @@ let AuthController = class AuthController {
         }
         const hashed = await bcrypt.hash(body.password, 12);
         return this.userService.save(Object.assign(Object.assign({}, data), { password: hashed, is_ambassador: false }));
-        return body;
+    }
+    async login(email, password, response) {
+        const user = await this.userService.findOne({ email });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        if (!await bcrypt.compare(password, user.password)) {
+            throw new common_1.BadRequestException('Invalid credentials');
+        }
+        const jwt = await this.jwtService.signAsync({
+            id: user.id
+        });
+        response.cookie('jwt', jwt, { httpOnly: true });
+        return {
+            message: 'success'
+        };
+    }
+    async user(request) {
+        const cookie = request.cookies['jwt'];
+        const { id } = await this.jwtService.verifyAsync(cookie);
+        return this.userService.findOne({ id });
+    }
+    async logout(response) {
+        response.clearCookie('jwt');
+        return {
+            message: 'success'
+        };
+    }
+    async updateInfo(request, first_name, last_name, email) {
+        const cookie = request.cookies['jwt'];
+        const { id } = await this.jwtService.verifyAsync(cookie);
+        await this.userService.update(id, {
+            first_name,
+            last_name,
+            email
+        });
+        return this.userService.findOne({ id });
+    }
+    async updatePassword(request, password, password_confirm) {
+        if (password !== password_confirm) {
+            throw new common_1.BadRequestException('Passwords do not match!');
+        }
+        const cookie = request.cookies['jwt'];
+        const { id } = await this.jwtService.verifyAsync(cookie);
+        await this.userService.update(id, {
+            password: await bcrypt.hash(password, 12)
+        });
+        return this.userService.findOne({ id });
     }
 };
 __decorate([
@@ -49,9 +99,56 @@ __decorate([
     __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.Post)('api/admin/login'),
+    __param(0, (0, common_1.Body)('email')),
+    __param(1, (0, common_1.Body)('password')),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Get)('api/admin/user'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "user", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Post)('api/admin/logout'),
+    __param(0, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Put)('api/admin/users/info'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('first_name')),
+    __param(2, (0, common_1.Body)('last_name')),
+    __param(3, (0, common_1.Body)('email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateInfo", null);
+__decorate([
+    (0, common_1.Put)('api/admin/users/password'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('password')),
+    __param(2, (0, common_1.Body)('password_confirm')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updatePassword", null);
 AuthController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [user_service_1.UserService])
+    (0, common_1.UseInterceptors)(common_1.ClassSerializerInterceptor),
+    __metadata("design:paramtypes", [user_service_1.UserService,
+        jwt_1.JwtService])
 ], AuthController);
 exports.AuthController = AuthController;
 //# sourceMappingURL=auth.controller.js.map

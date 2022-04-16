@@ -24,6 +24,12 @@ let UserService = class UserService {
     async save(options) {
         return this.userRepository.save(options);
     }
+    async findOne(options) {
+        return this.userRepository.findOne(options);
+    }
+    async update(id, options) {
+        return this.userRepository.update(id, options);
+    }
 };
 UserService = __decorate([
     (0, common_1.Injectable)(),
