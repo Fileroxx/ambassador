@@ -6,14 +6,14 @@ export declare class AuthController {
     private userService;
     private jwtService;
     constructor(userService: UserService, jwtService: JwtService);
-    register(body: RegisterDto): Promise<any>;
-    login(email: string, password: string, response: Response): Promise<{
+    register(body: RegisterDto, request: Request): Promise<any>;
+    login(email: string, password: string, response: Response, request: Request): Promise<{
         message: string;
     }>;
-    user(request: Request): Promise<import("../user/user").User>;
+    user(request: Request): Promise<any>;
     logout(response: Response): Promise<{
         message: string;
     }>;
-    updateInfo(request: Request, first_name: string, last_name: string, email: string): Promise<import("../user/user").User>;
-    updatePassword(request: Request, password: string, password_confirm: string): Promise<import("../user/user").User>;
+    updateInfo(request: Request, first_name: string, last_name: string, email: string): Promise<any>;
+    updatePassword(request: Request, password: string, password_confirm: string): Promise<any>;
 }

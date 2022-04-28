@@ -11,8 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const class_transformer_1 = require("class-transformer");
+const order_1 = require("../order/order");
 const typeorm_1 = require("typeorm");
 let User = class User {
+    get revenue() {
+        return this.orders.filter(o => o.complete).reduce((s, o) => s + o.ambassador_revenue, 0);
+    }
 };
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
@@ -39,6 +43,12 @@ __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
 ], User.prototype, "is_ambassador", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => order_1.Order, order => order.user, {
+        createForeignKeyConstraints: false
+    }),
+    __metadata("design:type", Array)
+], User.prototype, "orders", void 0);
 User = __decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

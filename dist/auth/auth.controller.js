@@ -35,15 +35,15 @@ let AuthController = class AuthController {
         this.userService = userService;
         this.jwtService = jwtService;
     }
-    async register(body) {
+    async register(body, request) {
         const { password_confirm } = body, data = __rest(body, ["password_confirm"]);
         if (body.password !== password_confirm) {
             throw new common_1.BadRequestException('Passwords do not match!');
         }
         const hashed = await bcrypt.hash(body.password, 12);
-        return this.userService.save(Object.assign(Object.assign({}, data), { password: hashed, is_ambassador: false }));
+        return this.userService.save(Object.assign(Object.assign({}, data), { password: hashed, is_ambassador: request.path === '/api/ambassador/register' }));
     }
-    async login(email, password, response) {
+    async login(email, password, response, request) {
         const user = await this.userService.findOne({ email });
         if (!user) {
             throw new common_1.NotFoundException('User not found');
@@ -51,8 +51,13 @@ let AuthController = class AuthController {
         if (!await bcrypt.compare(password, user.password)) {
             throw new common_1.BadRequestException('Invalid credentials');
         }
+        const adminLogin = request.path === '/api/admin/login';
+        if (user.is_ambassador && adminLogin) {
+            throw new common_1.UnauthorizedException();
+        }
         const jwt = await this.jwtService.signAsync({
-            id: user.id
+            id: user.id,
+            scope: adminLogin ? 'admin' : 'ambassador'
         });
         response.cookie('jwt', jwt, { httpOnly: true });
         return {
@@ -62,7 +67,15 @@ let AuthController = class AuthController {
     async user(request) {
         const cookie = request.cookies['jwt'];
         const { id } = await this.jwtService.verifyAsync(cookie);
-        return this.userService.findOne({ id });
+        if (request.path === '/api/admin/user') {
+            return this.userService.findOne({ id });
+        }
+        const user = await this.userService.findOne({
+            id,
+            relations: ['orders', 'orders.order_items']
+        });
+        const { orders, password, data } = user;
+        return Object.assign(Object.assign({}, user), { revenue: user.revenue });
     }
     async logout(response) {
         response.clearCookie('jwt');
@@ -93,24 +106,26 @@ let AuthController = class AuthController {
     }
 };
 __decorate([
-    (0, common_1.Post)('api/admin/register'),
+    (0, common_1.Post)(['api/admin/register', 'api/ambassador/register']),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
+    __metadata("design:paramtypes", [register_dto_1.RegisterDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
-    (0, common_1.Post)('api/admin/login'),
+    (0, common_1.Post)(['api/admin/login', 'api/ambassador/login']),
     __param(0, (0, common_1.Body)('email')),
     __param(1, (0, common_1.Body)('password')),
     __param(2, (0, common_1.Res)({ passthrough: true })),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
-    (0, common_1.Get)('api/admin/user'),
+    (0, common_1.Get)(['api/admin/user', 'api/ambassador/user']),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -118,7 +133,7 @@ __decorate([
 ], AuthController.prototype, "user", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
-    (0, common_1.Post)('api/admin/logout'),
+    (0, common_1.Post)(['api/admin/logout', 'api/ambassador/logout']),
     __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -126,7 +141,7 @@ __decorate([
 ], AuthController.prototype, "logout", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
-    (0, common_1.Put)('api/admin/users/info'),
+    (0, common_1.Put)(['api/admin/users/info', 'api/ambassador/users/info']),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)('first_name')),
     __param(2, (0, common_1.Body)('last_name')),
@@ -136,7 +151,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "updateInfo", null);
 __decorate([
-    (0, common_1.Put)('api/admin/users/password'),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Put)(['api/admin/users/password', 'api/ambassador/users/password']),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)('password')),
     __param(2, (0, common_1.Body)('password_confirm')),

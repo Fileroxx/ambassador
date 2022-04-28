@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ClassSerializerInterceptor, Controller, Get, NotFoundException, Post, Put, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ClassSerializerInterceptor, Controller, Get, NotFoundException, Post, Put, Req, Res, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterDto } from './dtos/register.dto';
 import * as bcrypt from 'bcrypt';
@@ -16,8 +16,11 @@ constructor(
 ) {
 }
 
-@Post('api/admin/register')
-async register(@Body() body: RegisterDto) {
+@Post(['api/admin/register', 'api/ambassador/register'])
+async register(
+    @Body() body: RegisterDto,
+    @Req() request: Request    
+    ) {
 
     const {password_confirm, ...data} = body;
 
@@ -30,18 +33,19 @@ async register(@Body() body: RegisterDto) {
     return this.userService.save({
         ...data,
         password: hashed,
-        is_ambassador: false
+        is_ambassador: request.path === '/api/ambassador/register'
     });
 
 }
 
 
-@Post('api/admin/login')
+@Post(['api/admin/login', 'api/ambassador/login'])
 async login(
     @Body('email') email: string,
     @Body('password') password: string,
-    @Res({ passthrough: true }) response: Response
-) {
+    @Res({ passthrough: true }) response: Response,
+    @Req() request: Request
+    ) {
     const user = await this.userService.findOne({email});
 
     if(!user) {
@@ -51,9 +55,17 @@ async login(
     if(!await bcrypt.compare(password, user.password)) {
         throw new BadRequestException('Invalid credentials');
     }
+    
+
+    const adminLogin = request.path === '/api/admin/login'; 
+
+    if(user.is_ambassador && adminLogin) {
+        throw new UnauthorizedException();
+    }
 
     const jwt = await this.jwtService.signAsync({
-        id: user.id
+        id: user.id,
+        scope:adminLogin ? 'admin' : 'ambassador'
     });
 
     response.cookie('jwt', jwt, {httpOnly: true});
@@ -65,17 +77,32 @@ async login(
 }
 
 @UseGuards(AuthGuard)
-@Get('api/admin/user')
+@Get(['api/admin/user', 'api/ambassador/user'])
 async user(@Req() request: Request) {
     const cookie = request.cookies['jwt']
 
     const {id} = await this.jwtService.verifyAsync(cookie);
 
-    return this.userService.findOne({id});
+    if(request.path === '/api/admin/user') {
+        return this.userService.findOne({id});
+    }
+
+    const user = await this.userService.findOne({
+        id,
+        relations: ['orders', 'orders.order_items']
+    });
+
+    const {orders, password, data } = user
+
+    return {
+        ...user,
+        revenue: user.revenue
+    }
+
 }
 
 @UseGuards(AuthGuard)
-@Post('api/admin/logout')
+@Post(['api/admin/logout', 'api/ambassador/logout'])
 async logout(@Res({passthrough: true}) response: Response) {
     response.clearCookie('jwt');
 
@@ -85,7 +112,7 @@ async logout(@Res({passthrough: true}) response: Response) {
 }
 
 @UseGuards(AuthGuard)
-@Put('api/admin/users/info')
+@Put(['api/admin/users/info', 'api/ambassador/users/info'])
 async updateInfo(
     @Req() request: Request,
     @Body('first_name') first_name: string,
@@ -105,7 +132,9 @@ async updateInfo(
     return this.userService.findOne({id});
 }
 
-@Put('api/admin/users/password')
+
+@UseGuards(AuthGuard)
+@Put(['api/admin/users/password', 'api/ambassador/users/password'])
 async updatePassword(
     @Req() request: Request,
     @Body('password') password: string,   

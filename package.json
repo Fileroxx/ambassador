@@ -18,7 +18,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed:ambassadors": "ts-node src/commands/ambassador.seeder.ts"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
@@ -26,10 +27,13 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/typeorm": "^8.0.3",
     "@types/bcryptjs": "^2.4.2",
+    "@types/faker": "^6.6.9",
     "bcrypt": "^5.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "cookie-parser": "^1.4.6",
+    "faker": "^5.5.3",
+    "faker-br": "^0.4.1",
     "mysql2": "^2.3.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
@@ -37,6 +41,7 @@
     "typeorm": "^0.2.45"
   },
   "devDependencies": {
+    "@faker-js/faker": "^6.2.0",
     "@nestjs/cli": "^8.0.0",
     "@nestjs/jwt": "^8.0.0",
     "@nestjs/schematics": "^8.0.0",
@@ -58,7 +63,7 @@
     "supertest": "^6.1.3",
     "ts-jest": "^27.0.3",
     "ts-loader": "^9.2.3",
-    "ts-node": "^10.0.0",
+    "ts-node": "^10.7.0",
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
   },

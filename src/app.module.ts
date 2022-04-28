@@ -8,11 +8,15 @@ import { AuthService } from './auth/auth.service';
 import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
+import { ProductModule } from './product/product.module';
+import { OrderModule } from './order/order.module';
+import { LinkModule } from './link/link.module';
+import { SharedModule } from './shared/shared.module';
 
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
+      TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
       port: 3306,
@@ -22,8 +26,13 @@ import { UserService } from './user/user.service';
       autoLoadEntities: true,
       synchronize: true,
     }),
+  
     UserModule,
     AuthModule,
+    ProductModule,
+    OrderModule,
+    LinkModule,
+    SharedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
