@@ -8,4 +8,5 @@ export declare class User {
     is_ambassador: boolean;
     orders: Order[];
     get revenue(): number;
+    get name(): string;
 }

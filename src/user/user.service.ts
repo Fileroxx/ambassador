@@ -10,7 +10,7 @@ export class UserService extends AbstractService {
         @InjectRepository(User) private readonly userRepository: Repository<User>
     ) {
 
-        super(userRepository)
+        super(userRepository);
 
     }
 

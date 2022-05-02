@@ -74,8 +74,8 @@ let AuthController = class AuthController {
             id,
             relations: ['orders', 'orders.order_items']
         });
-        const { orders, password, data } = user;
-        return Object.assign(Object.assign({}, user), { revenue: user.revenue });
+        const { orders, password } = user, data = __rest(user, ["orders", "password"]);
+        return Object.assign(Object.assign({}, data), { revenue: user.revenue });
     }
     async logout(response) {
         response.clearCookie('jwt');

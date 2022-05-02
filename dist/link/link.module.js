@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LinkModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const auth_module_1 = require("../auth/auth.module");
 const shared_module_1 = require("../shared/shared.module");
 const link_1 = require("./link");
 const link_controller_1 = require("./link.controller");
@@ -18,10 +19,12 @@ let LinkModule = class LinkModule {
 LinkModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([link_1.Link]),
-            shared_module_1.SharedModule
+            shared_module_1.SharedModule,
+            auth_module_1.AuthModule
         ],
         controllers: [link_controller_1.LinkController],
-        providers: [link_service_1.LinkService]
+        providers: [link_service_1.LinkService],
+        exports: [link_service_1.LinkService]
     })
 ], LinkModule);
 exports.LinkModule = LinkModule;

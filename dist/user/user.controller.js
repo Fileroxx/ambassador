@@ -21,6 +21,18 @@ let UserController = class UserController {
             is_ambassador: true
         });
     }
+    async rankings() {
+        const ambassadors = this.userService.find({
+            is_ambassador: true,
+            relations: ['orders', 'orders.order_items']
+        });
+        return (await ambassadors).map(ambassador => {
+            return {
+                name: ambassador.name,
+                revenue: ambassador.revenue
+            };
+        });
+    }
 };
 __decorate([
     (0, common_1.Get)('api/admin/ambassadors'),
@@ -28,6 +40,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "ambassadors", null);
+__decorate([
+    (0, common_1.Get)('ambassador/rankings'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "rankings", null);
 UserController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [user_service_1.UserService])

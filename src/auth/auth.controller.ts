@@ -65,7 +65,7 @@ async login(
 
     const jwt = await this.jwtService.signAsync({
         id: user.id,
-        scope:adminLogin ? 'admin' : 'ambassador'
+        scope: adminLogin ? 'admin' : 'ambassador'
     });
 
     response.cookie('jwt', jwt, {httpOnly: true});
@@ -79,11 +79,11 @@ async login(
 @UseGuards(AuthGuard)
 @Get(['api/admin/user', 'api/ambassador/user'])
 async user(@Req() request: Request) {
-    const cookie = request.cookies['jwt']
+    const cookie = request.cookies['jwt'];
 
     const {id} = await this.jwtService.verifyAsync(cookie);
 
-    if(request.path === '/api/admin/user') {
+    if (request.path === '/api/admin/user') {
         return this.userService.findOne({id});
     }
 
@@ -92,13 +92,12 @@ async user(@Req() request: Request) {
         relations: ['orders', 'orders.order_items']
     });
 
-    const {orders, password, data } = user
+    const {orders, password, ...data} = user;
 
     return {
-        ...user,
+        ...data,
         revenue: user.revenue
     }
-
 }
 
 @UseGuards(AuthGuard)
